@@ -1,0 +1,68 @@
+#!/usr/bin/perl -w
+use Data::Dumper;
+
+use strict;
+use DBI;
+use Sys::Hostname;
+
+my $COUNTLISTENER=1;
+my $CBROK=1;
+my $ST=1;
+if ( hostname() eq 'HOSTNAME' ) { #HOSTNAME
+	$ENV{"ORACLE_HOME"} = "/opt/app/oracle/product/11.2.0.4/dbhome_1"; #ORACLE_HOME
+	$COUNTLISTENER=1; #LISTER COUNT(Listener names must be LISTENER and LISTENER2 and so on)
+	$CBROK=1; #Count of Num_Cbrok
+	$ST=1; #start listerner number. if DRCP use LISTENER 3 and 4 and 5,$ST=3 
+}
+}
+
+my $vl;
+if (exists $ARGV[0]) {
+	if ($ARGV[0] eq 'autoconf') {
+        	print "yes\n";
+	}
+	if ($ARGV[0] eq "config") {
+    		print "graph_title Oracle DRCP DENY CONNECT COUNT per Sec in 5Mins\n";
+		print "graph_args --upper-limit 100 -l 0\n";
+		print "graph_vlabel CONNECTION DENY  COUNT Per Sec\n";
+		print "graph_category Oracle\n";
+		print "graph_info This graph show DRCP CONNECT DENY COUNT per Sec IN 5MINs\n";
+        	my $cnt=$ST;
+        	while ($cnt <= $COUNTLISTENER)
+		{
+			for(my $i=0;$i < $CBROK;$i++)
+			{
+				my $brk=sprintf("N%03d",$i);
+	  			print "listener$cnt$brk.label listener$cnt$brk\n";
+	  			print "listener$cnt$brk.info DRCP CONNECTION per Sec IN 5Mins\n";
+	  			print "listener$cnt$brk.type DERIVE \n";
+				print "listener$cnt$brk.min 0\n";
+	  			if($cnt==$ST && $i == 0){
+					print "listener$cnt$brk.draw AREA\n";
+				}else{
+					print "listener$cnt$brk.draw STACK\n";
+				}
+			}
+          		$cnt++;
+        	}
+    	}
+    	exit 0;
+}
+my $cnt=$ST;
+while($cnt <= $COUNTLISTENER)
+{
+	for(my $i=0;$i < $CBROK;$i++)
+	{
+		my $brk=sprintf("N%03d",$i);
+		if($cnt==$ST){
+			my $lis = "listener";
+                        $lis = "listener$cnt" if($ST > 1);
+        		$vl=`$ENV{"ORACLE_HOME"}/bin/lsnrctl service $lis | grep $brk | awk '{print \$3}' | awk -F'[:]' '{print \$2}'`;
+        	}else{
+        		$vl=`$ENV{"ORACLE_HOME"}/bin/lsnrctl service listener$cnt | grep $brk | awk '{print \$3}' | awk -F'[:]' '{print \$2}'`;
+        	}
+		$vl = "0\n" if(! $vl);
+		print "listener$cnt$brk.value ".$vl;
+	}
+	$cnt++;
+}

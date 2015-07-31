@@ -1,0 +1,79 @@
+#!/usr/bin/perl -w
+
+use strict;
+use DBI;
+use Sys::Hostname;
+
+my $dbhost = '';
+my $dbname = '';
+my $dbuser = '';
+my $dbport = '';
+my $dbpass = '';
+my $dsn = '';
+if ( hostname() eq 'HOSTNAME' ) { #HOSTNAME
+  $ENV{'ORACLE_HOME'} = '/opt/app/oracle/product/11.2.0/dbhome_1'; #ORACLE_HOME
+  $ENV{'LD_LIBRARY_PATH'} = '/opt/app/oracle/product/11.2.0/dbhome_1/lib'; #LD_LIBRARY_PATH
+  $dbhost = '127.0.0.1';
+  $dbname = 'SID';
+  $dbuser = 'system';
+  $dbport = '1521';
+  $dbpass = 'PASSWORD';
+  $dsn = "DBI:Oracle:$dbname";
+}
+
+my $req="NumRequests";
+my $wait="NumWaits";
+if (! eval "require DBD::Oracle;") {
+     exit 1;
+}
+
+my $dbh = DBI->connect ($dsn, $dbuser,
+			$dbpass,
+			{RaiseError =>1}) || die "";
+
+
+if (exists $ARGV[0]) {
+    if ($ARGV[0] eq 'autoconf') {
+	# Check for DBD::Oracle
+	if (! eval "require DBD::Oracle;") {
+	     print "no (DBD::Oracle not found)";
+	     exit 1;
+	}
+        if ($dbh) {
+            print "yes\n";
+            exit 0;
+        } else {
+            print "no Unable to access Database $dbname on host $dbhost as user $dbuser.\nError returned was: ". $DBI::errstr;
+            exit 1;
+	}
+    }
+
+    if ($ARGV[0] eq "config") {
+    	print "graph_title Oracle DRCP Request and Wait Count Per Sec in 5Mins\n";
+		print "graph_args --upper-limit 1000 -l 0\n";
+		print "graph_vlabel counts\n";
+		print "graph_category Oracle\n";
+		print "graph_info This graph show DRCP Request and Wait Count per Sec IN 5MINSs\n";
+		print "$req.label $req per Sec IN 5MINS\n";
+		print "$req.info $req per Sec IN 5Mins\n";
+		print "$req.type DERIVE\n";
+		print "$req.min 0\n";
+		print "$req.draw LINE2\n";
+		print "$wait.label $wait per Sec IN 5MINS\n";
+                print "$wait.info $wait per Sec IN 5Mins\n";
+                print "$wait.type DERIVE\n";
+		print "$wait.min 0\n";
+                print "$wait.draw LINE2\n";
+		exit 0;
+    }
+}
+my ($r,$w);
+my $sql_curr = "select NUM_REQUESTS,NUM_WAITS  from V\$CPOOL_STATS";
+my $sth_curr = $dbh->prepare($sql_curr);
+$sth_curr->execute();
+while(($r,$w)=$sth_curr->fetchrow())
+{
+	print "$req.value $r\n";
+	print "$wait.value $w\n";
+}
+$sth_curr->finish;

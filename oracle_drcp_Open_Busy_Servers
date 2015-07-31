@@ -1,0 +1,77 @@
+#!/usr/bin/perl -w
+
+use strict;
+use DBI;
+use Sys::Hostname;
+
+my $dbhost = '';
+my $dbname = '';
+my $dbuser = '';
+my $dbport = '';
+my $dbpass = '';
+my $dsn = '';
+
+if ( hostname() eq 'HOSTNAME' ) {
+  $ENV{'ORACLE_HOME'} = '/opt/app/oracle/product/11.2.0/dbhome_1';
+  $ENV{'LD_LIBRARY_PATH'} = '/opt/app/oracle/product/11.2.0/dbhome_1/lib';
+  $dbhost = '127.0.0.1';
+  $dbname = 'SID';
+  $dbuser = 'system';
+  $dbport = '1521';
+  $dbpass = 'PASSWORD';
+  $dsn = "DBI:Oracle:$dbname";
+}
+
+my $OS="OpenServers";
+my $BS="BusyServers";
+
+if (! eval "require DBD::Oracle;") {
+     exit 1;
+}
+
+my $dbh = DBI->connect ($dsn, $dbuser,
+			$dbpass,
+			{RaiseError =>1}) || die "";
+
+
+
+if (exists $ARGV[0]) {
+    if ($ARGV[0] eq 'autoconf') {
+	# Check for DBD::Oracle
+	if (! eval "require DBD::Oracle;") {
+	     print "no (DBD::Oracle not found)";
+	     exit 1;
+	}
+        if ($dbh) {
+            print "yes\n";
+            exit 0;
+        } else {
+            print "no Unable to access Database $dbname on host $dbhost as user $dbuser.\nError returned was: ". $DBI::errstr;
+            exit 1;
+	}
+    }
+
+    if ($ARGV[0] eq "config") {
+    	print "graph_title Oracle DRCP COUNTS of BUSY and OPEN_SERVERS\n";
+	print "graph_args --upper-limit 500 -l 0\n";
+	print "graph_vlabel count\n";
+	print "graph_category Oracle\n";
+	print "graph_info This graph shows DRCP COUNTS of BUSY and OPEN_SERVERS\n";
+	print "$OS.label the number of DRCP Open Servers\n";
+	print "$OS.type GAUGE\n";
+	print "$OS.draw LINE2\n";
+        print "$BS.label the number of DRCP Busy Servers\n";
+        print "$BS.type GAUGE\n";
+        print "$BS.draw LINE2\n";
+	exit 0;
+    }
+}
+
+my $sql_curr = "select NUM_OPEN_SERVERS,NUM_BUSY_SERVERS from V\$CPOOL_STATS";
+
+my $sth_curr = $dbh->prepare($sql_curr);
+$sth_curr->execute();
+my ($open,$busy) = $sth_curr->fetchrow();
+print "$OS.value $open\n";
+print "$BS.value $busy\n";
+
