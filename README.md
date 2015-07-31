@@ -1,12 +1,13 @@
 # munin-plugin-Oracle-DRCP
 Must use Oracle DRCP and Munin
 
-#Contain
+#Contains
+<pre>
 oracle_drcp_listener_perSec       Number of DRCP connections per sec that Listeners have allowed
 oracle_drcp_deny_listener_perSec  Number of DRCP connections per sec that Listeners have denied
 oracle_drcp_Open_Busy_Servers     Number of DRCP OPEN SERVERS and BUSY SERVERS
 oracle_drcp_Requests_WaitsIn5Mins Number of DRCP Requests and Waits
-
+</pre>
 #settings
 <pre>
 if ( hostname() eq 'HOSTNAME' ) { #HOSTNAME
@@ -28,4 +29,23 @@ if ( hostname() eq 'HOSTNAME' ) {
   $dbpass = 'PASSWORD';
   $dsn = "DBI:Oracle:$dbname";
 }
+</pre>
+
+#sample
+<pre>
+$ munin-run oracle_drcp_listener_perSec
+listener3N000.value 0
+listener3N001.value 0
+listener4N000.value 0
+listener4N001.value 0
+listener5N000.value 0
+listener5N001.value 0
+
+$ munin-run oracle_drcp_Open_Busy_Servers
+OpenServers.value 150
+BusyServers.value 0
+
+$ munin-run oracle_drcp_Requests_WaitsIn5Mins
+NumRequests.value 0
+NumWaits.value 0
 </pre>
