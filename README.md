@@ -1,6 +1,11 @@
 # munin-plugin-Oracle-DRCP
 Must use Oracle DRCP and Munin
 
+#install
+<pre>
+cpanm DBD::Oracle
+</pre>
+
 #Contains
 <pre>
 oracle_drcp_listener_perSec       Number of DRCP connections per sec that Listeners have allowed
